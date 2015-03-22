@@ -30,7 +30,7 @@ if __name__ == '__main__':
     try:
         connection.create_table(
             'pavel.gladkov',
-            {'data': dict(max_versions = 10000)}
+            {'data': dict(max_versions=10000)}
         )
     except happybase.hbase.ttypes.AlreadyExists:
         pass
