@@ -5,6 +5,9 @@ import sys
 
 res = {}
 
+last_url = None
+count = 0
+
 for line in sys.stdin:
     line = line.strip()
 
@@ -14,10 +17,14 @@ for line in sys.stdin:
     except ValueError:
         continue
 
-    try:
-        res[url] = res[url] + val
-    except:
-        res[url] = val
+    if last_url is None:
+        last_url = url
 
-for url in res.keys():
-    print('%s\t%s' % (url, res[url]))
+    if last_url == url:
+        count += val
+    else:
+        print('%s\t%s' % (last_url, count))
+        count = val
+        last_url = url
+
+print('%s\t%s' % (last_url, count))
