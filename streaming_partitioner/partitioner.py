@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 __author__ = 'Pavel Gladkov'
 
 import sys
@@ -12,7 +12,7 @@ if __name__ == '__main__':
         key = sys.argv[1]
         value = sys.argv[2]
         num_part = sys.argv[3]
-        p = key % num_part
+        p = hash(key) % num_part
     except IndexError:
         pass
 
