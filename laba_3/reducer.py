@@ -3,9 +3,6 @@ __author__ = 'Pavel Gladkov'
 
 import sys
 
-last_uid = None
-domains_count = {}
-
 
 def print_cats(_uid, _domains_count):
 
@@ -17,26 +14,32 @@ def print_cats(_uid, _domains_count):
         ['postnauka.ru', 'plantarium.ru', 'lensart.ru']
     ]
 
-    _classes = []
+    _classes = [0, 0, 0, 0, 0]
 
     for i, _class in enumerate(classifier):
-        user_class = 0
+        pages = 0
+        _c = 0
         for _d in _class:
             v_count = _domains_count.get(_d, 0)
-            if v_count >= 3:
-                user_class += 0.5
-        _classes[i] = 1 if user_class > 0.5 else 0
+            pages += v_count
+            if v_count > 0:
+                _c += 1
+        _classes[i] = 1 if pages >= 3 and _c >= 2 else 0
 
-    print("%s\t%s\t%s\t%s\t%s\t%s" % (_uid, ))
+    _p = [_uid] + _classes
+    print("%s\t%s\t%s\t%s\t%s\t%s" % tuple(_p))
 
 if __name__ == '__main__':
+
+    last_uid = None
+    domains_count = {}
 
     for line in sys.stdin:
         line = line.strip()
 
         try:
             uid, domain = line.split('\t', 1)
-            uid = int(domain)
+            uid = int(uid)
         except ValueError:
             continue
 
