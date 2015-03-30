@@ -8,7 +8,26 @@ domains_count = {}
 
 
 def print_cats(_uid, _domains_count):
-    pass
+
+    classifier = [
+        ['cars.ru', 'avto-russia.ru', 'bmwclub.ru'],
+        ['zakon.kz', 'egov.kz', 'makler.md'],
+        ['novayagazeta.ru', 'echo.msk.ru', 'inosmi.ru'],
+        ['snowmobile.ru', 'nastroisam.ru', 'mobyware.ru'],
+        ['postnauka.ru', 'plantarium.ru', 'lensart.ru']
+    ]
+
+    _classes = []
+
+    for i, _class in enumerate(classifier):
+        user_class = 0
+        for _d in _class:
+            v_count = _domains_count.get(_d, 0)
+            if v_count >= 3:
+                user_class += 0.5
+        _classes[i] = 1 if user_class > 0.5 else 0
+
+    print("%s\t%s\t%s\t%s\t%s\t%s" % (_uid, ))
 
 if __name__ == '__main__':
 
