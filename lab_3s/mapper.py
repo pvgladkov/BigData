@@ -15,7 +15,7 @@ if __name__ == "__main__":
     f = open('autousers_lab3S.txt', 'r')
     auto_users = []
     for user_id in f:
-        auto_users.append(user_id)
+        auto_users.append(int(user_id.strip()))
 
     for line in sys.stdin:
         line = line.strip()
@@ -32,6 +32,5 @@ if __name__ == "__main__":
         domain = domain.replace('www.', '')
 
         is_auto_user = 1 if uid in auto_users else 0
-        is_auto_domain = 1 if domain in auto_domains else 0
 
-        print("%s\t%s;%s" % (domain, is_auto_user, is_auto_domain))
+        print("%s\t%d" % (domain, is_auto_user))
