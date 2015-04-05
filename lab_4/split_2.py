@@ -33,7 +33,8 @@ if __name__ == "__main__":
         for _v in visits:
             url = _v.get('url', '').encode('utf-8')
             _domain = get_domain(url)
-            _d.append(_domain)
+            if _domain is not None:
+                _d.append(_domain)
         return _d
 
     def get_domains_count(visits):
@@ -41,6 +42,8 @@ if __name__ == "__main__":
         for _v in visits:
             url = _v.get('url', '').encode('utf-8')
             _domain = get_domain(url)
+            if _domain is None:
+                continue
             try:
                 _d[_domain] += 1
             except KeyError:
