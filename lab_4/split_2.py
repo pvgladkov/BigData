@@ -44,8 +44,8 @@ if __name__ == "__main__":
     all_domains = get_all_domains(f)
 
     print("start split \n")
-    train_file = open('train_2.csv', 'w')
-    test_file = open('test_2.csv', 'w')
+    train_file = open('data/train_2.csv', 'w')
+    test_file = open('data/test_2.csv', 'w')
 
     train_writer = csv.DictWriter(train_file, ['male', 'uid', 'total_visits', 'unique_domains'] + all_domains)
     train_writer.writeheader()
@@ -54,12 +54,11 @@ if __name__ == "__main__":
     test_writer.writeheader()
 
     def get_result_dict(_data):
-        _d = get_domains(_data.get('visits', []))
         _d_count = get_domains_count(_data.get('visits', []))
         _total_visits = 0
         for _k, _v in _d_count.iteritems():
             _total_visits += _v
-        _result_dict = {'total_visits': _total_visits, 'unique_domains': len(_d)}
+        _result_dict = {'total_visits': _total_visits, 'unique_domains': len(_d_count)}
         for _domain in all_domains:
             _v = _d_count.get(_domain, 0)
             _result_dict[_domain] = _v
