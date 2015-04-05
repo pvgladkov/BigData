@@ -3,8 +3,16 @@ __author__ = 'pavel'
 import csv
 import json
 from utils import get_domain
+import logging
 
 if __name__ == "__main__":
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        datefmt='%m-%d %H:%M')
+
+    logger = logging.getLogger(__name__)
 
     def get_all_domains(_file):
         _d = dict()
@@ -39,11 +47,17 @@ if __name__ == "__main__":
                 _d[_domain] = 1
         return _d
 
-    print("get all domains \n")
+    logger.info("get all domains")
+
     f = open('gender_dataset.txt', 'r')
     all_domains = get_all_domains(f)
+    domain_file = open('data/all_domains.txt', 'w')
+    map(lambda x: domain_file.write(x+'\n'), all_domains)
+    domain_file.close()
+    logger.info('domains count %d' % len(all_domains))
 
-    print("start split \n")
+    logger.info("start split")
+
     train_file = open('data/train_2.csv', 'w')
     test_file = open('data/test_2.csv', 'w')
 
