@@ -2,7 +2,7 @@ __author__ = 'pavel'
 
 import csv
 import json
-from utils import get_domain, get_all_domains, get_good_domains
+from utils import get_domain, get_all_domains, get_good_domains, get_domains_stat
 import logging
 import os
 

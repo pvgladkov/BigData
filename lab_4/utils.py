@@ -77,10 +77,12 @@ def _get_all_domains_male_female_count(_file):
             continue
         dd = get_domains(_data.get('visits', []))
         for _dom in dd:
+            __d = _d.get(_dom, {})
             try:
-                _d[_dom][_gender] += 1
+                __d[_gender] += 1
             except KeyError:
-                _d[_dom][_gender] = 1
+                __d[_gender] = 1
+            _d[_dom] = __d
 
     return _d
 
@@ -129,7 +131,7 @@ def get_good_domains():
 
 
 def get_domains_stat():
-    path = 'data/good_domains.txt'
+    path = 'data/domains_stat.txt'
     if os.path.exists(path):
         domain_file = open(path, 'r')
         good_domains = []
@@ -139,14 +141,14 @@ def get_domains_stat():
     else:
         domain_file = open(path, 'w')
         f = open('gender_dataset.txt', 'r')
-        all_domains = _get_all_domains_count(f)
+        all_domains = _get_all_domains_male_female_count(f)
 
         good_domains = []
         for k, v in all_domains.iteritems():
-            if v > 6:
-                good_domains.append(k)
-
-        map(lambda x: domain_file.write(x+'\n'), good_domains)
+            if v.get('M', 0) > 500 and v.get('F', 0) > 500:
+                s = "%s\t%s\t%s\t%s" % (k, v.get('M', 0), v.get('F', 0), v.get('-', 0))
+                good_domains.append(s)
+                domain_file.write(s+'\n')
 
     domain_file.close()
     return good_domains
