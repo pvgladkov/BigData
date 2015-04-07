@@ -65,6 +65,26 @@ def _get_all_domains_count(_file):
     return _d
 
 
+def _get_all_domains_male_female_count(_file):
+    _d = dict()
+    for _l in _file:
+        _l = _l.strip()
+        _fields = _l.split('\t')
+        try:
+            _gender = _fields[0]
+            _data = json.loads(_fields[2])
+        except (IndexError, ValueError):
+            continue
+        dd = get_domains(_data.get('visits', []))
+        for _dom in dd:
+            try:
+                _d[_dom][_gender] += 1
+            except KeyError:
+                _d[_dom][_gender] = 1
+
+    return _d
+
+
 def get_all_domains():
 
     path = 'data/all_domains.txt'
@@ -85,6 +105,30 @@ def get_all_domains():
 
 
 def get_good_domains():
+    path = 'data/good_domains.txt'
+    if os.path.exists(path):
+        domain_file = open(path, 'r')
+        good_domains = []
+        for line in domain_file:
+            good_domains.append(line.strip())
+
+    else:
+        domain_file = open(path, 'w')
+        f = open('gender_dataset.txt', 'r')
+        all_domains = _get_all_domains_count(f)
+
+        good_domains = []
+        for k, v in all_domains.iteritems():
+            if v > 6:
+                good_domains.append(k)
+
+        map(lambda x: domain_file.write(x+'\n'), good_domains)
+
+    domain_file.close()
+    return good_domains
+
+
+def get_domains_stat():
     path = 'data/good_domains.txt'
     if os.path.exists(path):
         domain_file = open(path, 'r')
