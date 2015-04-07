@@ -2,8 +2,9 @@ __author__ = 'pavel'
 
 import csv
 import json
-from utils import get_domain
+from utils import get_domain, get_all_domains, get_good_domains
 import logging
+import os
 
 if __name__ == "__main__":
 
@@ -13,29 +14,6 @@ if __name__ == "__main__":
         datefmt='%m-%d %H:%M')
 
     logger = logging.getLogger(__name__)
-
-    def get_all_domains(_file):
-        _d = dict()
-        for _l in _file:
-            _l = _l.strip()
-            _fields = _l.split('\t')
-            try:
-                _data = json.loads(_fields[2])
-            except (IndexError, ValueError):
-                continue
-            dd = get_domains(_data.get('visits', []))
-            for _dom in dd:
-                _d[_dom] = 1
-        return _d.keys()
-
-    def get_domains(visits):
-        _d = []
-        for _v in visits:
-            url = _v.get('url', '').encode('utf-8')
-            _domain = get_domain(url)
-            if _domain is not None:
-                _d.append(_domain)
-        return _d
 
     def get_domains_count(visits):
         _d = {}
@@ -52,11 +30,8 @@ if __name__ == "__main__":
 
     logger.info("get all domains")
 
-    f = open('gender_dataset.txt', 'r')
-    all_domains = get_all_domains(f)
-    domain_file = open('data/all_domains.txt', 'w')
-    map(lambda x: domain_file.write(x+'\n'), all_domains)
-    domain_file.close()
+    all_domains = get_good_domains()
+
     logger.info('domains count %d' % len(all_domains))
 
     logger.info("start split")
