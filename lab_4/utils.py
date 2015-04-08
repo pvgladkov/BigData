@@ -5,6 +5,7 @@ import urlparse
 import urllib
 import json
 import os
+import operator
 
 
 THRESHOLD = 6
@@ -120,7 +121,7 @@ def get_good_domains():
         domain_file = open(path, 'w')
         f = open('gender_dataset.txt', 'r')
         all_domains_stat = _get_all_domains_male_female_count(f)
-        good_domains = []
+        good_domains = {}
         for k, gender_stat in all_domains_stat.iteritems():
             male_count = float(gender_stat.get('M', 0))
             female_count = float(gender_stat.get('F', 0))
@@ -130,9 +131,13 @@ def get_good_domains():
             else:
                 val = 0
             if v > THRESHOLD and val > 0.2:
-                good_domains.append(k)
+                good_domains[k] = v
 
-        map(lambda x: domain_file.write(x+'\n'), good_domains)
+        sorted_x = sorted(good_domains.items(), key=operator.itemgetter(1), reverse=True)
+        sorted_x = sorted_x[0:1000]
+        good_domains = []
+        map(lambda x: domain_file.write(x[0]+'\n'), sorted_x)
+        map(lambda x: good_domains.append(x[0]), sorted_x)
 
     domain_file.close()
     return good_domains
