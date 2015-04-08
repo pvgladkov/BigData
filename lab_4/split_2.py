@@ -6,13 +6,34 @@ import json
 from utils import get_domain, get_all_domains, get_good_domains, get_domains_stat
 import logging
 import os
+import copy
+import functools
+import time
+
+
+def timed(logger_, level=None, form='%s: %s ms'):
+    if level is None:
+        level = logging.DEBUG
+
+    def decorator(fn):
+        @functools.wraps(fn)
+        def inner(*args, **kwargs):
+            start = time.time()
+            result = fn(*args, **kwargs)
+            duration = time.time() - start
+            logger_.log(level, form, repr(fn), duration * 1000)
+            return result
+        return inner
+
+    return decorator
+
 
 if __name__ == "__main__":
 
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-        datefmt='%m-%d %H:%M')
+        datefmt='%m-%d-%y %H:%M:%S')
 
     logger = logging.getLogger(__name__)
 
