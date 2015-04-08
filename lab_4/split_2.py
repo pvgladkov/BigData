@@ -1,4 +1,5 @@
 __author__ = 'pavel'
+# -*- coding: utf-8 -*-
 
 import csv
 import json
@@ -30,6 +31,7 @@ if __name__ == "__main__":
 
     logger.info("get all domains")
 
+    # домены-фичи, только хорошие
     all_domains = get_good_domains()
 
     logger.info('domains count %d' % len(all_domains))

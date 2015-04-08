@@ -7,6 +7,9 @@ import json
 import os
 
 
+THRESHOLD = 6
+
+
 def get_domain(_url):
     result = urlparse.urlparse(urllib.unquote(_url))
     domain = result.hostname
@@ -88,7 +91,6 @@ def _get_all_domains_male_female_count(_file):
 
 
 def get_all_domains():
-
     path = 'data/all_domains.txt'
     if os.path.exists(path):
         domain_file = open(path, 'r')
@@ -117,11 +119,17 @@ def get_good_domains():
     else:
         domain_file = open(path, 'w')
         f = open('gender_dataset.txt', 'r')
-        all_domains = _get_all_domains_count(f)
-
+        all_domains_stat = _get_all_domains_male_female_count(f)
         good_domains = []
-        for k, v in all_domains.iteritems():
-            if v > 6:
+        for k, gender_stat in all_domains_stat.iteritems():
+            male_count = float(gender_stat.get('M', 0))
+            female_count = float(gender_stat.get('F', 0))
+            v = male_count + female_count
+            if v > 0:
+                val = abs(male_count - female_count) / (male_count + female_count)
+            else:
+                val = 0
+            if v > THRESHOLD and val > 0.2:
                 good_domains.append(k)
 
         map(lambda x: domain_file.write(x+'\n'), good_domains)
@@ -143,12 +151,25 @@ def get_domains_stat():
         f = open('gender_dataset.txt', 'r')
         all_domains = _get_all_domains_male_female_count(f)
 
+        val_metric = {}
+
         good_domains = []
         for k, v in all_domains.iteritems():
-            if v.get('M', 0) > 500 and v.get('F', 0) > 500:
-                s = "%s\t%s\t%s\t%s" % (k, v.get('M', 0), v.get('F', 0), v.get('-', 0))
-                good_domains.append(s)
-                domain_file.write(s+'\n')
+            male_count = float(v.get('M', 0))
+            female_count = float(v.get('F', 0))
+            if male_count + female_count > 0:
+                val = abs(male_count - female_count) / (male_count + female_count)
+            else:
+                val = 0
+            if 0 < val < 0.2 and male_count > THRESHOLD:
+                val_metric[k] = val
+            s = "%s\t%s\t%s\t%s\t%f" % (k, male_count, female_count, v.get('-', 0), val)
+            good_domains.append(s)
+            domain_file.write(s+'\n')
 
+        import operator
+        sorted_x = sorted(val_metric.items(), key=operator.itemgetter(1))
+        for _i in sorted_x:
+            print(_i)
     domain_file.close()
     return good_domains
