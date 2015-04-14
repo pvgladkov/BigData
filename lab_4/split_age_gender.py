@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     logger.info("get all domains")
     # домены-фичи, только хорошие
-    all_domains = get_good_domains(domains_filename='/home/pavel/P/BigData/lab_4/age_gender/data/good_domains.txt',
+    all_domains = get_good_domains(domains_filename='/home/pgladkov/P/BigData/lab_4/age_gender/data/good_domains.txt',
                                    dataset_file=data_file)
 
     ages = ['18-24', '25-34', '35-44', '45-54', '>=55']
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         for g in genders:
             classes.append(a+g)
 
-    train_writer = csv.DictWriter(train_file, ['cat'] + all_domains)
+    train_writer = csv.DictWriter(train_file, ['cl'] + all_domains)
     train_writer.writeheader()
 
     test_writer = csv.DictWriter(test_file, ['uid'] + all_domains)
@@ -72,7 +72,7 @@ if __name__ == "__main__":
             test_writer.writerow(result_dict)
         else:
             result_dict = get_result_dict(data)
-            result_dict['cat'] = age + gender
+            result_dict['cl'] = age + gender
             train_writer.writerow(result_dict)
 
     test_file.close()

@@ -23,8 +23,12 @@ if __name__ == "__main__":
 
     ages = ['18-24', '25-34', '35-44', '45-54', '>=55']
     genders = ['M', 'F']
+    classes = []
+    for a in ages:
+        for g in genders:
+            classes.append(a+g)
 
-    writer = csv.DictWriter(result_file, ['domain', 'total'] + genders + ages)
+    writer = csv.DictWriter(result_file, ['domain', 'total'] + classes)
     writer.writeheader()
 
     test_writer = csv.DictWriter(test_result_file, ['domain', 'total'])
@@ -61,10 +65,8 @@ if __name__ == "__main__":
             _d_count = get_domains_count(data.get('visits', []))
 
             for domain, domain_count in _d_count.iteritems():
-                domain_stat = result.get(domain, {'total': 0, '18-24': 0, '25-34': 0,
-                                                  '35-44': 0, '45-54': 0, '>=55': 0, 'M': 0, 'F': 0})
-                domain_stat[age] += domain_count
-                domain_stat[gender] += domain_count
+                domain_stat = result.get(domain, dict({c: 0 for c in classes}.items() + {'total': 0}.items()))
+                domain_stat[age+gender] += domain_count
                 domain_stat['total'] += domain_count
 
                 result[domain] = domain_stat
