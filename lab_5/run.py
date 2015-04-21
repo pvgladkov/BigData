@@ -24,11 +24,7 @@ if __name__ == '__main__':
     members = vk_api.get_members(GROUP_ID)
     logger.info('count: %s' % members.get('count', 0))
 
-    print members
     member_list = members.get('items', [])
-
-    profile = vk_api.get_profile(member_list[0])
-    print profile
 
     # результат
     with open('lab5statistics.json', 'w') as f:

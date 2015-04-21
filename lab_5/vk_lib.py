@@ -12,11 +12,6 @@ class Vk(object):
 
     def get_members(self, group_id):
         method = 'groups.getMembers'
-        r = requests.get(self._url + method, params={'group_id': group_id})
+        _fields = ['interests']
+        r = requests.get(self._url + method, params={'group_id': group_id, 'fields': _fields})
         return r.json().get('response', {})
-
-    def get_profile(self, user_id):
-        method = 'users.get'
-        r = requests.get(self._url + method, params={'user_id': user_id})
-        print r.url
-        return r.text
