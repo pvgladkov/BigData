@@ -8,6 +8,7 @@ import json
 from vk_lib import Vk
 from collections import Counter
 from datetime import date, timedelta
+import re
 
 if __name__ == '__main__':
 
@@ -24,7 +25,7 @@ if __name__ == '__main__':
 
     r_gender = {'male': 0, 'female': 0, '?': 0}
     r_age = {"<=10": 0, "11-20": 0, "21-30": 0, "?": 0, ">=31": 0}
-    r_interests = Counter()
+    r_interests = []
 
     vk_api = Vk()
 
@@ -75,12 +76,17 @@ if __name__ == '__main__':
     members = vk_api.get_members(GROUP_ID, 'interests')
     logger.info('count: %s' % members.get('count', 0))
     member_list = members.get('items', [])
+    p1 = re.compile("[\u0400-\u0500a-z\s\'\"]{4,}")
     for member in member_list:
-        r_age[get_age_group(member.get('bdate'))] += 1
+        inter = member.get('interests', False)
+        if inter:
+            user_i = p1.findall(inter.lower())
+            user_i = list(set(user_i))
+            r_interests += user_i
 
     # результат
     with open('lab5statistics.json', 'w') as f:
-        result['top_interest'] = r_interests.most_common()
+        result['top_interest'] = Counter(r_interests).most_common(1)[0][0]
         result['gender'] = r_gender
         result['age'] = r_age
 
