@@ -39,7 +39,7 @@ if __name__ == '__main__':
             r_gender['female'] += 1
         if gender == 2:
             r_gender['male'] += 1
-        else:
+        if gender == 0:
             r_gender['?'] += 1
 
     end_date = date(2015, 4, 1)
@@ -56,11 +56,11 @@ if __name__ == '__main__':
         years = delta.days / 365
         if years <= 10:
             return '<=10'
-        if 10 < years <= 20:
+        if 11 <= years <= 20:
             return '11-20'
-        if 20 < years <= 30:
+        if 21 <= years <= 30:
             return '21-30'
-        if years >= 30:
+        if years >= 31:
             return '>=31'
 
         return "?"
@@ -81,6 +81,7 @@ if __name__ == '__main__':
         inter = member.get('interests', False)
         if inter:
             user_i = p1.findall(inter.lower())
+            user_i = [i.strip() for i in user_i]
             user_i = list(set(user_i))
             r_interests += user_i
 
