@@ -91,7 +91,7 @@ if __name__ == '__main__':
         for member in member_list:
             inter = member.get('interests', False)
             if inter:
-                user_i = p1.findall(inter.lower())
+                user_i = p1.findall(inter.encode('utf-8').lower())
                 user_i = [i.strip() for i in user_i]
                 user_i = list(set(user_i))
                 r_interests += user_i
@@ -99,6 +99,7 @@ if __name__ == '__main__':
     # результат
     with open('lab5statistics.json', 'w') as f:
         counter = Counter(r_interests)
+        print counter.most_common()
         result['top_interest'] = counter.most_common(1)[0][0]
         result['gender'] = r_gender
         result['age'] = r_age
