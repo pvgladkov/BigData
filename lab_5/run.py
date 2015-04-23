@@ -10,6 +10,7 @@ from collections import Counter
 from datetime import date, timedelta, datetime
 import re
 from dateutil.relativedelta import relativedelta
+import codecs
 
 if __name__ == '__main__':
 
@@ -87,20 +88,23 @@ if __name__ == '__main__':
         members = vk_api.get_members(GROUP_ID, 'interests', 500, i)
         logger.info('count: %s' % members.get('count', 0))
         member_list = members.get('items', [])
-        p1 = re.compile("[\u0400-\u0500a-z\s\'\"]{4,}")
+        p1 = re.compile(ur"[а-яa-z\s\'\"]{4,}", re.U)
         for member in member_list:
             inter = member.get('interests', False)
+
             if inter:
-                user_i = p1.findall(inter.encode('utf-8').lower())
+                inter = inter.lower()
+                user_i = p1.findall(inter)
                 user_i = [i.strip() for i in user_i]
                 user_i = list(set(user_i))
                 r_interests += user_i
 
     # результат
-    with open('lab5statistics.json', 'w') as f:
+    with codecs.open('lab5statistics.json', 'w', 'utf-8') as f:
         counter = Counter(r_interests)
-        print counter.most_common()
-        result['top_interest'] = counter.most_common(1)[0][0]
+        top = counter.most_common(1)[0][0]
+        print top
+        result['top_interest'] = top.encode('utf-8')
         result['gender'] = r_gender
         result['age'] = r_age
 
