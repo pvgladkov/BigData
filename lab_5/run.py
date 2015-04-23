@@ -7,8 +7,9 @@ import logging
 import json
 from vk_lib import Vk
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import re
+from dateutil.relativedelta import relativedelta
 
 if __name__ == '__main__':
 
@@ -27,6 +28,16 @@ if __name__ == '__main__':
     r_age = {"<=10": 0, "11-20": 0, "21-30": 0, "?": 0, ">=31": 0}
     r_interests = []
 
+    def num_years(begin, end):
+        _num_years = int((end - begin).days / 365.25)
+        if begin > yearsago(_num_years, end):
+            return _num_years - 1
+        else:
+            return _num_years
+
+    def yearsago(years, from_date):
+        return from_date - relativedelta(years=years)
+
     def get_age_group(_date):
         if _date is None:
             return "?"
@@ -35,8 +46,9 @@ if __name__ == '__main__':
             start_date = date(int(year), int(month), int(day))
         except ValueError:
             return "?"
-        delta = end_date - start_date
-        years = delta.days / 365
+
+        end_date = date(2015, 4, 1)
+        years = num_years(start_date, end_date)
         if years <= 10:
             return '<=10'
         if 11 <= years <= 20:
@@ -48,7 +60,6 @@ if __name__ == '__main__':
 
         return "?"
 
-    end_date = date(2015, 4, 1)
     vk_api = Vk()
 
     # пол
@@ -87,7 +98,8 @@ if __name__ == '__main__':
 
     # результат
     with open('lab5statistics.json', 'w') as f:
-        result['top_interest'] = Counter(r_interests).most_common(1)[0][0]
+        counter = Counter(r_interests)
+        result['top_interest'] = counter.most_common(1)[0][0]
         result['gender'] = r_gender
         result['age'] = r_age
 
