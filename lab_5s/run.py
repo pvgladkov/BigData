@@ -12,7 +12,7 @@ import networkx as nx
 import requests
 
 MY_GROUP_ID = 29937606
-MY_USER_ID = 182879134
+MY_USER_ID = 144597051
 
 SERVER_URL = "http://ec2-52-17-77-210.eu-west-1.compute.amazonaws.com/method/"
 WINDOW_SIZE = 1000
@@ -33,8 +33,8 @@ build_group_request = lambda d: SERVER_URL + (
     )
 )
 
-build_friends_request = lambda user_id: SERVER_URL + (
-    "friends.get?v=5.29&lang=en&user_id={0}".format(user_id)
+build_friends_request = lambda _user_id: SERVER_URL + (
+    "friends.get?v=5.29&lang=en&user_id={0}".format(_user_id)
 )
 
 pages = (
