@@ -63,8 +63,8 @@ def get_user_ids():
         user_ids = set()
         for i, page in enumerate(pages):
             logger.info("Page {0} from {1}".format(i, int(float(COUNT) / WINDOW_SIZE)))
-            for user_id in page:
-                user_ids.add(user_id)
+            for _user_id in page:
+                user_ids.add(_user_id)
 
         with open(ids_dump_filename, "wb") as _dump:
             cPickle.dump(user_ids, _dump, cPickle.HIGHEST_PROTOCOL)
@@ -78,33 +78,35 @@ USER_IDS = get_user_ids()
 
 # строим граф
 if not os.path.exists(GRAPH_DUMP_FILENAME):
+
     graph = nx.Graph()
-
-    q = Queue.Queue()
-    q.put(MY_USER_ID)
-
     visited = set()
+    __i = 0
+    for user_id in USER_IDS:
+        __i += 1
+        logger.info("%d from %d" % (__i, len(USER_IDS)))
+        q = Queue.Queue()
+        q.put(user_id)
+        counter = 0
+        while not q.empty():
+            current_id = q.get()
+            if current_id in visited:
+                continue
+            counter += 1
+            visited.add(current_id)
 
-    counter = 0
-    while not q.empty():
-        current_id = q.get()
-        if current_id in visited:
-            continue
-        counter += 1
-        visited.add(current_id)
+            friends_ids = set(requests.get(
+                build_friends_request(current_id)
+            ).json()['response']['items']) & USER_IDS - visited
 
-        friends_ids = set(requests.get(
-            build_friends_request(current_id)
-        ).json()['response']['items']) & USER_IDS - visited
+            # logger.info("Found friend N{0}: {1} ({2} friends)".format(counter, current_id, len(friends_ids)))
 
-        logger.info("Found friend N{0}: {1} ({2} friends)".format(counter, current_id, len(friends_ids)))
-
-        for f_id in friends_ids:
-            graph.add_node(f_id)
-            graph.add_edge(current_id, f_id)
-            q.put(f_id)
-        if counter % 1000 == 0:
-            time.sleep(1)
+            for f_id in friends_ids:
+                graph.add_node(f_id)
+                graph.add_edge(current_id, f_id)
+                q.put(f_id)
+            if counter % 1000 == 0:
+                time.sleep(1)
 
     with open(GRAPH_DUMP_FILENAME, "wb") as dump:
         cPickle.dump(graph, dump, cPickle.HIGHEST_PROTOCOL)
@@ -113,7 +115,7 @@ else:
         graph = cPickle.load(dump)
 
 res = {
-    "max": nx.eccentricity(graph, MY_USER_ID),
+    "max": nx.eccentricity(graph, MY_USER_ID),  # 14
     "mean": 0
 }
 
@@ -122,11 +124,14 @@ sum_paths = 0
 for n in graph.nodes_iter():
     if n == MY_USER_ID:
         continue
-    sum_paths += nx.shortest_path_length(
-        graph,
-        source=MY_USER_ID,
-        target=n
-    )
+    try:
+        sum_paths += nx.shortest_path_length(
+            graph,
+            source=MY_USER_ID,
+            target=n
+        )
+    except nx.NetworkXNoPath:
+        continue
 
 res["mean"] = round(float(sum_paths) / count, 10)
 print(json.dumps(res))
