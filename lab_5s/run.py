@@ -144,3 +144,4 @@ res["mean"] = round(float(sum_paths) / count, 10)
 print(json.dumps(res))
 
 # {"max": 14, "mean": 5.5441285441}
+# {"max": 14, "mean": 5.5582734633}
