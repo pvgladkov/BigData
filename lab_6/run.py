@@ -12,6 +12,7 @@ from harmonic_centrality import harmonic_centrality as hc
 from networkx.algorithms.link_analysis import pagerank
 import operator
 import requests
+import requests.exceptions
 
 logging.basicConfig(
     level=logging.INFO,
@@ -89,38 +90,41 @@ if not os.path.exists(GRAPH_DUMP_FILENAME):
 
     graph = nx.Graph()
     visited = set()
-    __i = 0
+
     counter = 0
     for user_id in USER_IDS:
-        __i += 1
-
-        if __i % 1000 == 0:
-            logger.info("%d from %d" % (__i, len(USER_IDS)))
 
         q = Queue.Queue()
         q.put(user_id)
-        is_start = True
+        graph.add_node(user_id)
         while not q.empty():
             current_id = q.get()
             if current_id in visited:
                 continue
             counter += 1
             visited.add(current_id)
+            graph.add_node(current_id)
 
-            res_friends = requests.get(build_friends_request(current_id), timeout=5).json()
-            res_followers = requests.get(build_followers_request(current_id), timeout=5).json()
+            try:
+                res_friends = requests.get(build_friends_request(current_id), timeout=5).json()
+            except requests.exceptions.ConnectionError:
+                time.sleep(5)
+                res_friends = requests.get(build_friends_request(current_id), timeout=5).json()
+
+            try:
+                res_followers = requests.get(build_followers_request(current_id), timeout=5).json()
+            except requests.exceptions.ConnectionError:
+                time.sleep(5)
+                res_followers = requests.get(build_followers_request(current_id), timeout=5).json()
 
             friends_ids = set(res_friends['response']['items']) & USER_IDS
             followers_ids = set(res_followers['response']['items']) & USER_IDS
+
             _ids = friends_ids.union(followers_ids)
 
             logger.info("Found friend N{0}: {1} ({2} friends)".format(counter, current_id, len(_ids)))
-            if is_start and len(_ids) == 0:
-                logger.info('isolated node %d' % current_id)
-                graph.add_node(current_id)
 
             for f_id in _ids:
-                is_start = False
                 graph.add_node(f_id)
                 graph.add_edge(current_id, f_id)
                 if f_id not in visited:
@@ -141,15 +145,23 @@ result = {
   "harmonic_ids": []
 }
 
+logger.info('graph nodes %d' % graph.number_of_nodes())
+
 logger.info('harmonic')
 harmonic = hc(graph)
 sorted_h = sorted(harmonic.items(), key=operator.itemgetter(1), reverse=True)
-result['harmonic_ids'] = map(lambda x: x[0], sorted_h[0:200])
+logger.info(sorted_h[0:20])
+result['harmonic_ids'] = map(lambda x: str(x[0]), sorted_h[0:200])
+
+logger.info(len(result['harmonic_ids']))
 
 logger.info('pr')
 pr = pagerank(graph, alpha=0.8507246376811566)
 sorted_pr = sorted(pr.items(), key=operator.itemgetter(1), reverse=True)
-result['pagerank_ids'] = map(lambda x: x[0], sorted_pr[0:200])
+logger.info(sorted_pr[0:20])
+result['pagerank_ids'] = map(lambda x: str(x[0]), sorted_pr[0:200])
+
+logger.info(len(result['pagerank_ids']))
 
 with open('lab6centralities.json', 'w') as f:
     f.write(json.dumps(result))
