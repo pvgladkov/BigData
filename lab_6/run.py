@@ -4,7 +4,6 @@
 import os
 import cPickle
 import json
-import Queue
 import time
 import logging
 import networkx as nx
@@ -22,7 +21,6 @@ logging.basicConfig(
 logging.getLogger('urllib3.connectionpool').setLevel(logging.ERROR)
 
 logger = logging.getLogger(__name__)
-
 
 MY_GROUP_ID = 90021065
 
@@ -82,89 +80,76 @@ def get_user_ids():
             logger.info('load from file, total %d' % len(user_ids))
     return user_ids
 
-GRAPH_DUMP_FILENAME = "graph.pickle"
-USER_IDS = get_user_ids()
 
-# строим граф
-if not os.path.exists(GRAPH_DUMP_FILENAME):
+def get_graph():
+    # строим граф
+    graph_dump_filename = "graph.pickle"
+    user_ids = get_user_ids()
+    if not os.path.exists(graph_dump_filename):
 
-    graph = nx.Graph()
-    visited = set()
+        graph = nx.Graph(directed=False)
 
-    counter = 0
-    for user_id in USER_IDS:
+        counter = 0
+        for user_id in user_ids:
 
-        q = Queue.Queue()
-        q.put(user_id)
-        graph.add_node(user_id)
-        while not q.empty():
-            current_id = q.get()
-            if current_id in visited:
-                continue
             counter += 1
-            visited.add(current_id)
-            graph.add_node(current_id)
+            graph.add_node(user_id)
+
+            if counter % 10 == 0:
+                logger.info(counter)
 
             try:
-                res_friends = requests.get(build_friends_request(current_id), timeout=5).json()
+                res_friends = requests.get(build_friends_request(user_id), timeout=5).json()
             except requests.exceptions.ConnectionError:
                 time.sleep(5)
-                res_friends = requests.get(build_friends_request(current_id), timeout=5).json()
+                res_friends = requests.get(build_friends_request(user_id), timeout=5).json()
 
             try:
-                res_followers = requests.get(build_followers_request(current_id), timeout=5).json()
+                res_followers = requests.get(build_followers_request(user_id), timeout=5).json()
             except requests.exceptions.ConnectionError:
                 time.sleep(5)
-                res_followers = requests.get(build_followers_request(current_id), timeout=5).json()
+                res_followers = requests.get(build_followers_request(user_id), timeout=5).json()
 
-            friends_ids = set(res_friends['response']['items']) & USER_IDS
-            followers_ids = set(res_followers['response']['items']) & USER_IDS
+            friends_ids = set(res_friends['response']['items']) & user_ids
+            followers_ids = set(res_followers['response']['items']) & user_ids
 
             _ids = friends_ids.union(followers_ids)
 
-            logger.info("Found friend N{0}: {1} ({2} friends)".format(counter, current_id, len(_ids)))
-
             for f_id in _ids:
                 graph.add_node(f_id)
-                graph.add_edge(current_id, f_id)
-                if f_id not in visited:
-                    q.put(f_id)
+                graph.add_edge(user_id, f_id)
 
-            if counter % 500 == 0:
-                time.sleep(1)
+        with open(graph_dump_filename, "w") as dump:
+            cPickle.dump(graph, dump, cPickle.HIGHEST_PROTOCOL)
+    else:
+        with open(graph_dump_filename, "r") as dump:
+            graph = cPickle.load(dump)
 
-    with open(GRAPH_DUMP_FILENAME, "w") as dump:
-        cPickle.dump(graph, dump, cPickle.HIGHEST_PROTOCOL)
-else:
-    with open(GRAPH_DUMP_FILENAME, "r") as dump:
-        graph = cPickle.load(dump)
+    return graph
 
+if __name__ == "__main__":
 
-result = {
-  "pagerank_ids": [],
-  "harmonic_ids": []
-}
+    G = get_graph()
 
-logger.info('graph nodes %d' % graph.number_of_nodes())
+    result = {
+      "pagerank_ids": [],
+      "harmonic_ids": []
+    }
 
-logger.info('harmonic')
-harmonic = hc(graph)
-sorted_h = sorted(harmonic.items(), key=operator.itemgetter(1), reverse=True)
-logger.info(sorted_h[0:20])
-result['harmonic_ids'] = map(lambda x: str(x[0]), sorted_h[0:200])
+    logger.info('graph nodes %d' % G.number_of_nodes())
 
-logger.info(len(result['harmonic_ids']))
+    logger.info('harmonic')
+    harmonic = hc(G)
+    sorted_h = sorted(harmonic.items(), key=operator.itemgetter(1), reverse=True)
+    result['harmonic_ids'] = map(lambda x: str(x[0]), sorted_h[0:200])
 
-logger.info('pr')
-pr = pagerank(graph, alpha=0.8507246376811566)
-sorted_pr = sorted(pr.items(), key=operator.itemgetter(1), reverse=True)
-logger.info(sorted_pr[0:20])
-result['pagerank_ids'] = map(lambda x: str(x[0]), sorted_pr[0:200])
+    logger.info('pr')
+    pr = pagerank(G, alpha=0.8507246376811566)
+    sorted_pr = sorted(pr.items(), key=operator.itemgetter(1), reverse=True)
+    result['pagerank_ids'] = map(lambda x: str(x[0]), sorted_pr[0:200])
 
-logger.info(len(result['pagerank_ids']))
+    with open('lab6centralities.json', 'w') as f:
+        f.write(json.dumps(result))
+        f.close()
 
-with open('lab6centralities.json', 'w') as f:
-    f.write(json.dumps(result))
-    f.close()
-
-logger.info('finish')
+    logger.info('finish')
