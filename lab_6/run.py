@@ -8,6 +8,9 @@ import Queue
 import time
 import logging
 import networkx as nx
+from harmonic_centrality import harmonic_centrality as hc
+from networkx.algorithms.link_analysis import pagerank
+import operator
 import requests
 
 logging.basicConfig(
@@ -43,6 +46,10 @@ build_group_request = lambda d: SERVER_URL + (
 
 build_friends_request = lambda _user_id: SERVER_URL + (
     "friends.get?v=5.29&lang=en&user_id={0}".format(_user_id)
+)
+
+build_followers_request = lambda _user_id: SERVER_URL + (
+    "users.getFollowers?v=5.29&lang=en&user_id={0}".format(_user_id)
 )
 
 pages = (
@@ -92,6 +99,7 @@ if not os.path.exists(GRAPH_DUMP_FILENAME):
 
         q = Queue.Queue()
         q.put(user_id)
+        is_start = True
         while not q.empty():
             current_id = q.get()
             if current_id in visited:
@@ -99,12 +107,20 @@ if not os.path.exists(GRAPH_DUMP_FILENAME):
             counter += 1
             visited.add(current_id)
 
-            res = requests.get(build_friends_request(current_id)).json()
-            friends_ids = set(res['response']['items']) & USER_IDS
+            res_friends = requests.get(build_friends_request(current_id), timeout=5).json()
+            res_followers = requests.get(build_followers_request(current_id), timeout=5).json()
 
-            logger.info("Found friend N{0}: {1} ({2} friends)".format(counter, current_id, len(friends_ids)))
+            friends_ids = set(res_friends['response']['items']) & USER_IDS
+            followers_ids = set(res_followers['response']['items']) & USER_IDS
+            _ids = friends_ids.union(followers_ids)
 
-            for f_id in friends_ids:
+            logger.info("Found friend N{0}: {1} ({2} friends)".format(counter, current_id, len(_ids)))
+            if is_start and len(_ids) == 0:
+                logger.info('isolated node %d' % current_id)
+                graph.add_node(current_id)
+
+            for f_id in _ids:
+                is_start = False
                 graph.add_node(f_id)
                 graph.add_edge(current_id, f_id)
                 if f_id not in visited:
@@ -118,3 +134,25 @@ if not os.path.exists(GRAPH_DUMP_FILENAME):
 else:
     with open(GRAPH_DUMP_FILENAME, "r") as dump:
         graph = cPickle.load(dump)
+
+
+result = {
+  "pagerank_ids": [],
+  "harmonic_ids": []
+}
+
+logger.info('harmonic')
+harmonic = hc(graph)
+sorted_h = sorted(harmonic.items(), key=operator.itemgetter(1), reverse=True)
+result['harmonic_ids'] = map(lambda x: x[0], sorted_h[0:200])
+
+logger.info('pr')
+pr = pagerank(graph, alpha=0.8507246376811566)
+sorted_pr = sorted(pr.items(), key=operator.itemgetter(1), reverse=True)
+result['pagerank_ids'] = map(lambda x: x[0], sorted_pr[0:200])
+
+with open('lab6centralities.json', 'w') as f:
+    f.write(json.dumps(result))
+    f.close()
+
+logger.info('finish')
