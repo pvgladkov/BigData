@@ -4,7 +4,6 @@
 import os
 import cPickle
 import json
-import time
 import logging
 import networkx as nx
 from harmonic_centrality import harmonic_centrality as hc
@@ -12,6 +11,7 @@ from networkx.algorithms.link_analysis import pagerank
 import operator
 import requests
 import requests.exceptions
+import requests.adapters
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,11 +27,14 @@ MY_GROUP_ID = 90021065
 SERVER_URL = "http://ec2-52-17-77-210.eu-west-1.compute.amazonaws.com/method/"
 WINDOW_SIZE = 1000
 
-COUNT = requests.get(
-    SERVER_URL + "groups.getMembers?scope=super&group_id={0}".format(
-        MY_GROUP_ID
-    )
+adapter = requests.adapters.HTTPAdapter(pool_connections=1, max_retries=10)
+SESSION = requests.Session()
+SESSION.mount('http://', adapter)
+
+COUNT = SESSION.get(
+    SERVER_URL + "groups.getMembers?scope=super&group_id={0}".format(MY_GROUP_ID)
 ).json()["response"]["count"]
+
 
 build_group_request = lambda d: SERVER_URL + (
     "groups.getMembers?scope=super&group_id={0}&{1}".format(
@@ -52,7 +55,7 @@ build_followers_request = lambda _user_id: SERVER_URL + (
 )
 
 pages = (
-    requests.get(
+    SESSION.get(
         build_group_request({
             "offset": WINDOW_SIZE * i,
             "count": WINDOW_SIZE,
@@ -60,6 +63,20 @@ pages = (
     ).json()['response']['items']
     for i in xrange(int(float(COUNT) / WINDOW_SIZE + 1))
 )
+
+
+def get_followers(user_id):
+    count = SESSION.get(build_followers_request(user_id)).json()['response']['count']
+    followers = []
+    for i in xrange(int(float(count) / WINDOW_SIZE + 1)):
+        params = {'v': 5.29, 'lang': 'en', 'user_id': user_id,
+                  "offset": WINDOW_SIZE * i, "count": WINDOW_SIZE}
+        items = SESSION.get(SERVER_URL + "users.getFollowers", params=params).json()['response']['items']
+        followers += items
+
+    followers_set = set(followers)
+    assert len(followers_set) == count or len(followers) == count, (count, len(followers_set), user_id)
+    return followers_set
 
 
 def get_user_ids():
@@ -95,23 +112,14 @@ def get_graph():
             counter += 1
             graph.add_node(user_id)
 
-            if counter % 10 == 0:
+            if counter % 100 == 0:
                 logger.info(counter)
 
-            try:
-                res_friends = requests.get(build_friends_request(user_id), timeout=5).json()
-            except requests.exceptions.ConnectionError:
-                time.sleep(5)
-                res_friends = requests.get(build_friends_request(user_id), timeout=5).json()
+            friends = SESSION.get(build_friends_request(user_id)).json()['response']['items']
+            followers = get_followers(user_id)
 
-            try:
-                res_followers = requests.get(build_followers_request(user_id), timeout=5).json()
-            except requests.exceptions.ConnectionError:
-                time.sleep(5)
-                res_followers = requests.get(build_followers_request(user_id), timeout=5).json()
-
-            friends_ids = set(res_friends['response']['items']) & user_ids
-            followers_ids = set(res_followers['response']['items']) & user_ids
+            friends_ids = set(friends) & user_ids
+            followers_ids = followers & user_ids
 
             _ids = friends_ids.union(followers_ids)
 
